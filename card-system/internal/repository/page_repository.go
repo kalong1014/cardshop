@@ -1,4 +1,3 @@
-// internal/repository/page_repository.go
 package repository
 
 import (

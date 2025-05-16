@@ -1,4 +1,3 @@
-// internal/service/page_service.go
 package service
 
 import (

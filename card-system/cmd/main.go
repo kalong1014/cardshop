@@ -1,4 +1,3 @@
-// cmd/main.go
 package main
 
 import (
@@ -8,6 +7,7 @@ import (
 	"card-system/internal/model"
 	"card-system/internal/repository"
 	"card-system/internal/service"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +23,8 @@ func main() {
 	}
 
 	// 连接数据库
-	dsn := cfg.DB.DSN()
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.Name)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect database: %v", err)
@@ -71,7 +72,7 @@ func main() {
 		// 页面管理路由
 		pages := auth.Group("/merchants/:merchantID/pages")
 		{
-			pages.GET("", pageCtrl.GetPages)
+			pages.GET("", pageCtrl.GetMerchantPages)
 			pages.POST("", pageCtrl.CreatePage)
 			pages.GET("/:id", pageCtrl.GetPage)
 			pages.PUT("/:id", pageCtrl.UpdatePage)
