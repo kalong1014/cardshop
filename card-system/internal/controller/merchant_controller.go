@@ -13,6 +13,10 @@ type MerchantController struct {
 	cfg *config.Config
 }
 
+func (c *MerchantController) RegisterRoutes(r *gin.RouterGroup) {
+	// 注册商户相关路由
+}
+
 func NewMerchantController(cfg *config.Config) *MerchantController {
 	return &MerchantController{cfg: cfg}
 }

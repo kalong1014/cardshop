@@ -1,19 +1,24 @@
+// internal/service/page_service.go
 package service
 
 import (
-	"card-system/internal/model"
 	"encoding/json"
 	"errors"
+
+	"card-system/internal/model"
+	"card-system/internal/repository"
 
 	"gorm.io/gorm"
 )
 
 type PageService struct {
-	db *gorm.DB
+	repo repository.PageRepository // 确保有 repo 字段
 }
 
-func NewPageService(db *gorm.DB) *PageService {
-	return &PageService{db: db}
+func NewPageService(repo repository.PageRepository) *PageService {
+	return &PageService{
+		repo: repo, // 修正字段名
+	}
 }
 
 // 创建页面

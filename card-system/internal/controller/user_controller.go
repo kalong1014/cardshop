@@ -15,6 +15,10 @@ type UserController struct {
 	cfg *config.Config
 }
 
+func (c *UserController) RegisterRoutes(r *gin.RouterGroup) {
+	// 注册用户相关路由
+}
+
 func NewUserController(cfg *config.Config) *UserController {
 	return &UserController{cfg: cfg}
 }

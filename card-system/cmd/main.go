@@ -1,12 +1,16 @@
+// cmd/main.go
+
 package main
 
 import (
+	"card-system/internal/model"
+	"log"
+	"os"
+
 	"card-system/internal/controller"
 	"card-system/internal/middleware"
 	"card-system/internal/repository"
 	"card-system/internal/service"
-	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
@@ -28,9 +32,9 @@ func main() {
 	log.Println("Connected to Database!")
 
 	// 自动迁移模型
-	db.AutoMigrate(&repository.User{}, &repository.Merchant{}, &repository.Page{})
+	db.AutoMigrate(&model.User{}, &model.Merchant{}, &model.Page{})
 
-	// 创建仓库实例
+	// 创建仓库
 	userRepo := repository.NewUserRepository(db)
 	merchantRepo := repository.NewMerchantRepository(db)
 	pageRepo := repository.NewPageRepository(db)
@@ -38,7 +42,7 @@ func main() {
 	// 创建服务
 	userService := service.NewUserService(userRepo)
 	merchantService := service.NewMerchantService(merchantRepo)
-	pageService := service.NewPageService(pageRepo)
+	pageService := service.NewPageService(pageRepo) // 传递正确的类型
 
 	// 创建控制器
 	userController := controller.NewUserController(userService)
