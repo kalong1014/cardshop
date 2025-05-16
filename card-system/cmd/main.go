@@ -1,72 +1,76 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-
-	"card-system/internal/config"
 	"card-system/internal/controller"
 	"card-system/internal/middleware"
-	"card-system/internal/model"
+	"card-system/internal/repository"
+	"card-system/internal/service"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func main() {
-	// 加载配置
-	cfg, err := config.LoadConfig("../config")
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+	// 数据库连接
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		dsn = "user:pass@tcp(127.0.0.1:3306)/card_system?charset=utf8mb4&parseTime=True&loc=Local"
 	}
 
-	// 连接数据库
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.Name)
-	err = model.ConnectDB(dsn)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect database: %v", err)
+		log.Fatal("连接数据库失败:", err)
 	}
+
+	log.Println("Connected to Database!")
 
 	// 自动迁移模型
-	model.DB.AutoMigrate(
-		&model.User{},
-		&model.Merchant{},
-		&model.Card{},
-		&model.Order{},
-	)
+	db.AutoMigrate(&repository.User{}, &repository.Merchant{}, &repository.Page{})
 
-	// 设置路由
+	// 创建仓库实例
+	userRepo := repository.NewUserRepository(db)
+	merchantRepo := repository.NewMerchantRepository(db)
+	pageRepo := repository.NewPageRepository(db)
+
+	// 创建服务
+	userService := service.NewUserService(userRepo)
+	merchantService := service.NewMerchantService(merchantRepo)
+	pageService := service.NewPageService(pageRepo)
+
+	// 创建控制器
+	userController := controller.NewUserController(userService)
+	merchantController := controller.NewMerchantController(merchantService)
+	pageController := controller.NewPageController(pageService)
+
+	// 创建路由
 	r := gin.Default()
 
-	// 注册控制器
-	userCtrl := controller.NewUserController(cfg)
-	merchantCtrl := controller.NewMerchantController(cfg)
-
-	// 公共路由
-	public := r.Group("/api")
+	// 注册API路由
+	api := r.Group("/api")
 	{
-		public.POST("/register", userCtrl.Register)
-		public.POST("/login", userCtrl.Login)
-	}
+		// 用户认证路由
+		userController.RegisterRoutes(api)
 
-	// 认证路由
-	authGroup := r.Group("/api")
-	authGroup.Use(middleware.AuthMiddleware(cfg))
-	{
-		authGroup.GET("/user/me", userCtrl.GetCurrentUser)
-		authGroup.POST("/merchants", merchantCtrl.CreateMerchant)
-	}
+		// 商户路由 (需要认证)
+		merchants := api.Group("/merchants")
+		merchants.Use(middleware.AuthMiddleware())
+		{
+			merchantController.RegisterRoutes(merchants)
+			pageController.RegisterRoutes(merchants)
+		}
 
-	// 管理员路由
-	adminGroup := r.Group("/api/admin")
-	adminGroup.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware())
-	{
-		adminGroup.GET("/merchants", merchantCtrl.GetAllMerchants)
-		adminGroup.PUT("/merchants/:id/status", merchantCtrl.UpdateMerchantStatus)
+		// 管理路由 (需要管理员权限)
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
+		{
+			// 管理员路由
+		}
 	}
 
 	// 启动服务器
-	log.Printf("Server started on port %s", cfg.App.Port)
-	log.Fatal(http.ListenAndServe(cfg.App.Port, r))
+	log.Println("Server started on port :8080")
+	r.Run(":8080")
 }

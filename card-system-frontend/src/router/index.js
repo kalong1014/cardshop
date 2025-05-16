@@ -2,6 +2,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
+    {
+    path: '/merchant/pages/builder',
+    name: 'PageBuilder',
+    component: () => import('../views/merchant/PageBuilder.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     name: 'Home',
