@@ -17,8 +17,16 @@ func (s *PageService) GetPageByID(id uint) (*model.Page, error) {
 	return s.pageRepo.GetByID(id)
 }
 
-func (s *PageService) CreatePage(page *model.Page) error {
-	return s.pageRepo.Create(page)
+func (s *PageService) CreatePage(merchantID uint, name string) (*model.Page, error) {
+	page := &model.Page{
+		MerchantID: merchantID,
+		Name:       name,
+	}
+	err := s.pageRepo.Create(page)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
 }
 
 func (s *PageService) UpdatePage(page *model.Page) error {
@@ -29,6 +37,6 @@ func (s *PageService) DeletePage(id uint) error {
 	return s.pageRepo.Delete(id)
 }
 
-func (s *PageService) GetPagesByMerchantID(merchantID uint) ([]model.Page, error) {
+func (s *PageService) GetMerchantPages(merchantID uint) ([]model.Page, error) {
 	return s.pageRepo.GetByMerchantID(merchantID)
 }

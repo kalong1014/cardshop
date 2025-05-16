@@ -38,9 +38,9 @@ func main() {
 	)
 
 	// 初始化仓库
-	userRepo := repository.NewUserRepository(db)
-	merchantRepo := repository.NewMerchantRepository(db)
-	pageRepo := repository.NewPageRepository(db)
+	userRepo := repository.NewUserRepository(db).(*repository.UserRepositoryImpl)
+	merchantRepo := repository.NewMerchantRepository(db).(*repository.MerchantRepositoryImpl)
+	pageRepo := repository.NewPageRepository(db).(*repository.PageRepositoryImpl)
 
 	// 初始化服务
 	userService := service.NewUserService(userRepo)

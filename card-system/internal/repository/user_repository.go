@@ -1,21 +1,10 @@
-// internal/repository/user_repository.go
 package repository
 
 import (
 	"card-system/internal/model"
-
-	"gorm.io/gorm"
 )
 
-type UserRepository struct {
-	db *gorm.DB
-}
-
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
-}
-
-func (r *UserRepository) FindByID(id uint) (*model.User, error) {
+func (r *UserRepositoryImpl) FindByID(id uint) (*model.User, error) {
 	var user model.User
 	if err := r.db.First(&user, id).Error; err != nil {
 		return nil, err
@@ -23,7 +12,7 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
+func (r *UserRepositoryImpl) FindByEmail(email string) (*model.User, error) {
 	var user model.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
@@ -31,10 +20,10 @@ func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
 	return &user, nil
 }
 
-func (r *UserRepository) Create(user *model.User) error {
+func (r *UserRepositoryImpl) Create(user *model.User) error {
 	return r.db.Create(user).Error
 }
 
-func (r *UserRepository) Update(user *model.User) error {
+func (r *UserRepositoryImpl) Update(user *model.User) error {
 	return r.db.Save(user).Error
 }

@@ -2,25 +2,7 @@ package repository
 
 import (
 	"card-system/internal/model"
-
-	"gorm.io/gorm"
 )
-
-type PageRepository interface {
-	GetByID(id uint) (*model.Page, error)
-	Create(page *model.Page) error
-	Update(page *model.Page) error
-	Delete(id uint) error
-	GetByMerchantID(merchantID uint) ([]model.Page, error)
-}
-
-type PageRepositoryImpl struct {
-	db *gorm.DB
-}
-
-func NewPageRepository(db *gorm.DB) PageRepository {
-	return &PageRepositoryImpl{db: db}
-}
 
 func (r *PageRepositoryImpl) GetByID(id uint) (*model.Page, error) {
 	var page model.Page

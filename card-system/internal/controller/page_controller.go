@@ -24,15 +24,17 @@ func (c *PageController) CreatePage(ctx *gin.Context) {
 		return
 	}
 
-	var page model.Page
-	if err := ctx.ShouldBindJSON(&page); err != nil {
+	var pageData struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&pageData); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	page.MerchantID = uint(merchantID)
-
-	if err := c.pageService.CreatePage(&page); err != nil {
+	page, err := c.pageService.CreatePage(uint(merchantID), pageData.Name)
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create page"})
 		return
 	}
@@ -47,7 +49,7 @@ func (c *PageController) GetMerchantPages(ctx *gin.Context) {
 		return
 	}
 
-	pages, err := c.pageService.GetPagesByMerchantID(uint(merchantID))
+	pages, err := c.pageService.GetMerchantPages(uint(merchantID))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch pages"})
 		return
