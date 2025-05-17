@@ -1,16 +1,13 @@
 package utils
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"math/big"
-	"time"
+	"net/http"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/registration"
 )
@@ -49,7 +46,7 @@ func ApplyCertificate(domain string) (string, string, error) {
 		return "", "", err
 	}
 
-	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificates.Certificate}),
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificates.Certificate})),
 		string(pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})),
 		nil
 }

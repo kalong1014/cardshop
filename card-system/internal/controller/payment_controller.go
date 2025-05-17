@@ -1,11 +1,15 @@
-package controllers
+package controller
 
 import (
-	"card-system/models"
-	"card-system/utils"
+	"card-system/internal/model"
+	"card-system/internal/utils"
+	"context"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // 支付回调接口（幂等性处理）
@@ -18,7 +22,7 @@ func PaymentCallback(c *gin.Context) {
 		return
 	}
 
-	var order models.Order
+	var order model.Order
 	if result := utils.DB.Where("transaction_id = ?", transactionID).First(&order); result.Error != nil {
 		c.JSON(http.StatusNotFound, "订单不存在")
 		return
@@ -26,12 +30,12 @@ func PaymentCallback(c *gin.Context) {
 
 	// 处理订单状态更新
 	if err := utils.DB.Transaction(func(tx *gorm.DB) error {
-		if order.Status != models.OrderStatusPending {
+		if order.Status != model.OrderStatusPending {
 			return nil // 状态已变更，无需处理
 		}
 		return tx.Model(&order).Updates(map[string]interface{}{
-			"status":    models.OrderStatusPaid,
-			"paid_at":   time.Now(),
+			"status":         model.OrderStatusPaid,
+			"paid_at":        time.Now(),
 			"transaction_id": transactionID,
 		}).Error
 	}); err != nil {

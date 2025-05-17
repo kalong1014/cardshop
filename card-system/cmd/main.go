@@ -35,6 +35,7 @@ func main() {
 		&model.User{},
 		&model.Merchant{},
 		&model.Page{},
+		&model.Card{}, // 添加 Card 模型
 	)
 
 	// 初始化仓库

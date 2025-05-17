@@ -1,15 +1,17 @@
 package utils
 
 import (
-	"card-system/model"
+	"card-system/internal/model"
+	"card-system/internal/utils"
 	"math/rand"
+	"strings"
 	"time"
 )
 
 // 卡密生成配置
 type CardGenConfig struct {
-	Length    int   // 卡密长度
-	Segments  int   // 分段数（如XXXX-XXXX格式）
+	Length    int    // 卡密长度
+	Segments  int    // 分段数（如XXXX-XXXX格式）
 	Separator string // 分隔符
 	Chars     string // 可用字符（默认：字母+数字）
 }
@@ -35,15 +37,15 @@ func GenerateCardCode(cfg *CardGenConfig) string {
 }
 
 func InitDB() error {
-    if err := DB.AutoMigrate(
-        &model.User{},
-        &model.Merchant{},
-        &model.Card{},
-        &model.Order{},
-    ); err != nil {
-        return err
-    }
-    return nil
+	if err := DB.AutoMigrate(
+		&model.User{},
+		&model.Merchant{},
+		&model.Card{},
+		&model.Order{},
+	); err != nil {
+		return err
+	}
+	return nil
 }
 
 // 批量生成卡密

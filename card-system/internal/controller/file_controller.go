@@ -1,11 +1,24 @@
-// controllers/file_controller.go
+package controller
+
+import (
+	"card-system/pkg/storage"
+	"card-system/internal/utils"
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+)
+
+// controller/file_controller.go
 func UploadLogo(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "文件上传失败"})
 		return
 	}
-	
+
 	merchantID := getCurrentMerchantID(c)
 	filename := fmt.Sprintf("merchant_%d_logo_%s", merchantID, uuid.New().String())
 	dst := fmt.Sprintf("static/logos/%s.jpg", filename)
@@ -13,9 +26,9 @@ func UploadLogo(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	
+
 	// 更新商户LOGO路径
-	if err := utils.DB.Model(&models.Merchant{}).Where("id = ?", merchantID).Update("logo", dst).Error; err != nil {
+	if err := utils.DB.Model(&model.Merchant{}).Where("id = ?", merchantID).Update("logo", dst).Error; err != nil {
 		handleError(c, err)
 		return
 	}
@@ -52,7 +65,7 @@ func UploadLogo(c *gin.Context) {
 	}
 
 	// 保存文件路径到数据库
-	if err := utils.DB.Model(&models.Merchant{}).Where("id = ?", getCurrentMerchantID(c)).Update("logo", filename).Error; err != nil {
+	if err := utils.DB.Model(&model.Merchant{}).Where("id = ?", getCurrentMerchantID(c)).Update("logo", filename).Error; err != nil {
 		return handleError(c, err)
 	}
 

@@ -1,4 +1,15 @@
 // 控制器集成（防刷中间件）
+package middleware
+
+import (
+	"net/http"
+	"time"
+
+	"github.com/dchest/captcha"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
+)
+
 func RateLimit() gin.HandlerFunc {
 	limiter := rate.NewLimiter(rate.Every(time.Minute), 5) // 每分钟5次
 	return func(c *gin.Context) {

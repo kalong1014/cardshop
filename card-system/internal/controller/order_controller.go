@@ -1,7 +1,9 @@
-package controller
+package controller 
+
 
 import (
-	"card-system/model"
+	"card-system/internal/model"
+	"card-system/internal/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

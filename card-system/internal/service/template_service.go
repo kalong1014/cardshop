@@ -1,8 +1,8 @@
 package service
 
 import (
-	"card-system/model"
-	"card-system/repository"
+	"card-system/internal/model"
+	"card-system/internal/repository"
 )
 
 type TemplateService struct {
@@ -16,18 +16,18 @@ func NewTemplateService(repo *repository.TemplateRepo) *TemplateService {
 // 保存模板
 func (s *TemplateService) SaveTemplate(merchantID uint, name string, data string) error {
 	return s.repo.Create(&model.PageTemplate{
-		MerchantID:  merchantID,
-		Name:        name,
-		LayoutData:  data,
-		IsDefault:   false,
+		MerchantID: merchantID,
+		Name:       name,
+		LayoutData: data,
+		IsDefault:  false,
 	})
 }
 
 // 设置默认模板
 func (s *TemplateService) SetDefaultTemplate(templateID uint) error {
 	// 先取消其他模板的默认状态
-	if err := s.repo.Update(&model.PageTemplate{IsDefault: false}, 
-		"merchant_id = ? AND is_default = ?", 
+	if err := s.repo.Update(&model.PageTemplate{IsDefault: false},
+		"merchant_id = ? AND is_default = ?",
 		model.GetMerchantIDFromContext(c), true); err != nil {
 		return err
 	}

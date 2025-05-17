@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"card-system/models"
-	"card-system/utils"
+	"card-system/internal/model"
+	"card-system/internal/utils"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,20 +46,20 @@ func RedeemCard(c *gin.Context) {
 		return
 	}
 
-	var card models.Card
+	var card model.Card
 	if result := utils.DB.Where("card_code = ?", req.CardCode).First(&card); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "卡密不存在或已过期"})
 		return
 	}
 
-	if card.Status != models.CardStatusUnused {
+	if card.Status != model.CardStatusUnused {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "卡密已使用或过期"})
 		return
 	}
 
 	// 标记为已使用
 	if err := utils.DB.Model(&card).Updates(map[string]interface{}{
-		"status":  models.CardStatusUsed,
+		"status":  model.CardStatusUsed,
 		"used_at": time.Now(),
 	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "核销失败"})
@@ -69,23 +70,23 @@ func RedeemCard(c *gin.Context) {
 }
 
 func GetCards(c *gin.Context) {
-	var query models.CardQuery
+	var query model.CardQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	merchantID := getCurrentMerchantID(c)
 	query.MerchantID = merchantID
-	
+
 	cards, total, err := service.Card.GetCards(&query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询失败"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"cards":  cards,
-		"total":  total,
-		"page":   query.Page,
+		"cards":    cards,
+		"total":    total,
+		"page":     query.Page,
 		"pageSize": query.PageSize,
 	})
 }
@@ -99,7 +100,7 @@ func BatchInvalidateCards(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := models.BatchUpdateCardStatus(req.CardIDs, models.CardStatusExpired); err != nil {
+	if err := model.BatchUpdateCardStatus(req.CardIDs, model.CardStatusExpired); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "批量操作失败"})
 		return
 	}

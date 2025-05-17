@@ -1,11 +1,15 @@
 package controller
 
 import (
-	"card-system/model"
-	"card-system/utils"
+	"card-system/internal/model"
+	"card-system/internal/utils"
+	"context"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // 支付回调接口（幂等性处理）
@@ -30,8 +34,8 @@ func PaymentCallback(c *gin.Context) {
 			return nil // 状态已变更，无需处理
 		}
 		return tx.Model(&order).Updates(map[string]interface{}{
-			"status":    models.OrderStatusPaid,
-			"paid_at":   time.Now(),
+			"status":         model.OrderStatusPaid,
+			"paid_at":        time.Now(),
 			"transaction_id": transactionID,
 		}).Error
 	}); err != nil {

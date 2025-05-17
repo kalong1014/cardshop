@@ -1,3 +1,11 @@
+package controller
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
 // 获取配置
 func GetConfig(c *gin.Context) {
 	key := c.Param("key")

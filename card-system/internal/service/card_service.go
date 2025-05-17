@@ -1,17 +1,34 @@
-func (s *CardService) GetCards(query *models.CardQuery) ([]*models.Card, int64, error) {
-	db := utils.DB.Model(&models.Card{}).Where("merchant_id = ?", query.MerchantID)
-	if query.Status != "" {
-		db = db.Where("status = ?", query.Status)
+package service
+
+import (
+	"card-system/internal/model"
+	"card-system/internal/repository"
+)
+
+type CardService struct {
+	cardRepo repository.CardRepository
+}
+
+func NewCardService(cardRepo repository.CardRepository) *CardService {
+	return &CardService{cardRepo: cardRepo}
+}
+
+func (s *CardService) GenerateCards(merchantID uint, productID uint, count int, length int) ([]model.Card, error) {
+	var cards []model.Card
+	for i := 0; i < count; i++ {
+		cardCode, err := model.GenerateCardCode(length)
+		if err != nil {
+			return nil, err
+		}
+		card := model.Card{
+			MerchantID: merchantID,
+			ProductID:  productID,
+			CardCode:   cardCode,
+		}
+		if err := s.cardRepo.Create(&card); err != nil {
+			return nil, err
+		}
+		cards = append(cards, card)
 	}
-	
-	var total int64
-	if err := db.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	
-	var cards []*models.Card
-	if err := db.Offset((query.Page-1)*query.PageSize).Limit(query.PageSize).Find(&cards).Error; err != nil {
-		return nil, 0, err
-	}
-	return cards, total, nil
+	return cards, nil
 }

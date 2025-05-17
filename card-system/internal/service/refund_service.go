@@ -1,3 +1,9 @@
+package service
+
+import (
+	"card-system/internal/model"
+)
+
 func (s *RefundService) ProcessRefund(refundID uint) error {
 	tx := utils.DB.Begin()
 	defer func() {
@@ -6,12 +12,12 @@ func (s *RefundService) ProcessRefund(refundID uint) error {
 		}
 	}()
 
-	var refund models.Refund
+	var refund model.Refund
 	if err := tx.First(&refund, refundID).Error; err != nil {
 		return err
 	}
 
-	var order models.Order
+	var order model.Order
 	if err := tx.First(&order, refund.OrderID).Error; err != nil {
 		return err
 	}
@@ -22,14 +28,14 @@ func (s *RefundService) ProcessRefund(refundID uint) error {
 	}
 
 	// 更新订单和卡密状态
-	if err := tx.Model(&order).Update("status", models.OrderStatusRefunded).Error; err != nil {
+	if err := tx.Model(&order).Update("status", model.OrderStatusRefunded).Error; err != nil {
 		return tx.Rollback().Error
 	}
-	if err := tx.Model(&models.Card{}).Where("id = ?", order.CardID).Update("status", models.CardStatusRefunded).Error; err != nil {
+	if err := tx.Model(&model.Card{}).Where("id = ?", order.CardID).Update("status", model.CardStatusRefunded).Error; err != nil {
 		return tx.Rollback().Error
 	}
 
-	refund.Status = models.RefundStatusApproved
+	refund.Status = model.RefundStatusApproved
 	if err := tx.Save(&refund).Error; err != nil {
 		return tx.Rollback().Error
 	}

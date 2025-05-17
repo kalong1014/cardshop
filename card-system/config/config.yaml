@@ -1,0 +1,13 @@
+  db:
+  host: localhost
+  port: 3306
+  user: root
+  password: Aa123789@
+  name: card_system
+  ssl_mode: disable
+app:
+  port: 8080
+jwt:
+  secret: "your-secret-key-123"
+redis:
+  addr: "localhost:6379"
