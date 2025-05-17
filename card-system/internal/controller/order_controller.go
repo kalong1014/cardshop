@@ -5,7 +5,8 @@ import (
 	"card-system/internal/model"
 	"card-system/internal/utils"
 	"net/http"
-
+    "card-system/internal/utils" // 添加此行
+    "card-system/internal/model"
 	"github.com/gin-gonic/gin"
 )
 

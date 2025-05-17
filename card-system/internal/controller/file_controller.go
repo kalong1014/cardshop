@@ -1,8 +1,9 @@
 package controller
 
 import (
+	"card-system/internal/model"
+	"card-system/internal/utils" // 添加此行
 	"card-system/pkg/storage"
-	"card-system/internal/utils"
 	"context"
 	"fmt"
 	"net/http"

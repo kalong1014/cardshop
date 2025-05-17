@@ -1,10 +1,9 @@
 package controller
 
 import (
-	"net/http"
-
 	"card-system/internal/config"
 	"card-system/internal/model"
+	"net/http" // 添加此行
 
 	"github.com/gin-gonic/gin"
 )

@@ -8,6 +8,27 @@ import (
 	"gorm.io/gorm"
 )
 
+// 卡片状态
+const (
+	CardStatusUnused   = "unused"
+	CardStatusUsed     = "used"
+	CardStatusExpired  = "expired"
+	CardStatusRefunded = "refunded"
+)
+
+// 订单状态
+const (
+	OrderStatusPending  = "pending"
+	OrderStatusPaid     = "paid"
+	OrderStatusRefunded = "refunded"
+)
+
+// 商户状态
+const (
+	MerchantStatusApproved = "approved"
+	MerchantStatusPending  = "pending"
+)
+
 type Card struct {
 	gorm.Model
 	MerchantID uint       `gorm:"not null" json:"merchant_id"`
