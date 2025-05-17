@@ -156,9 +156,6 @@ github.com/golang-jwt/jwt/v5
 ## explicit
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
-# github.com/google/uuid v1.6.0
-## explicit
-github.com/google/uuid
 # github.com/jinzhu/inflection v1.0.0
 ## explicit
 github.com/jinzhu/inflection

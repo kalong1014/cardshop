@@ -1,43 +1,52 @@
 package middleware
 
 import (
-	"card-system/internal/model"
-	"card-system/internal/utils"
-	"fmt"
-	"strings"
-	"time"
+    "net/http"
+    "time"
 
-	"github.com/gin-gonic/gin"
+    "card-system/internal/common"
 )
 
-func LogMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		startTime := time.Now()
-		c.Next()
-
-		// 记录登录日志
-		if c.Request.URL.Path == "/api/login" {
-			var log model.OperationLog
-			log.UserID = getCurrentUserID(c)
-			log.Username = c.GetString("username")
-			log.Type = model.LogTypeLogin
-			log.Action = fmt.Sprintf("登录成功，状态码：%d", c.Writer.Status())
-			log.IP = getClientIP(c)
-			utils.DB.Create(&log)
-		}
-
-		// 记录其他操作日志（示例：商户操作）
-		if strings.HasPrefix(c.Request.URL.Path, "/api/merchant/") {
-			// 解析商户ID和操作类型
-			// ... 具体逻辑根据路由设计补充 ...
-		}
-	}
+// LogMiddleware 日志中间件
+type LogMiddleware struct {
+    logger common.Logger
 }
 
-func getClientIP(c *gin.Context) string {
-	ip := c.ClientIP()
-	if ip == "::1" {
-		ip = "127.0.0.1"
-	}
-	return ip
+// NewLogMiddleware 创建日志中间件
+func NewLogMiddleware(logger common.Logger) *LogMiddleware {
+    return &LogMiddleware{
+        logger: logger,
+    }
 }
+
+// Handle 处理请求日志
+func (m *LogMiddleware) Handle(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        
+        // 使用响应包装器捕获状态码
+        lw := &loggingResponseWriter{w, http.StatusOK}
+        
+        next.ServeHTTP(lw, r)
+        
+        duration := time.Since(start)
+        
+        m.logger.Info("%s %s %d %s", 
+            r.Method, 
+            r.URL.Path, 
+            lw.statusCode,
+            duration,
+        )
+    })
+}
+
+// loggingResponseWriter 用于捕获响应状态码
+type loggingResponseWriter struct {
+    http.ResponseWriter
+    statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+    lrw.statusCode = code
+    lrw.ResponseWriter.WriteHeader(code)
+}    

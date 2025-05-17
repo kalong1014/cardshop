@@ -1,67 +1,111 @@
 package utils
 
 import (
-	"card-system/internal/model"
-	"card-system/internal/utils"
-	"math/rand"
-	"strings"
-	"time"
+    "crypto/rand"
+    "encoding/hex"
+    "errors"
+    "fmt"
+    "math/big"
+    "strings"
+    "time"
+
+    "card-system/internal/common"
 )
 
-// 卡密生成配置
-type CardGenConfig struct {
-	Length    int    // 卡密长度
-	Segments  int    // 分段数（如XXXX-XXXX格式）
-	Separator string // 分隔符
-	Chars     string // 可用字符（默认：字母+数字）
+// CardGenerator 卡密生成器
+type CardGenerator struct {
+    logger common.Logger
 }
 
-// 生成单张卡密
-func GenerateCardCode(cfg *CardGenConfig) string {
-	if cfg.Chars == "" {
-		cfg.Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	}
-	rand.Seed(time.Now().UnixNano())
-	buf := make([]byte, cfg.Length)
-	for i := range buf {
-		buf[i] = cfg.Chars[rand.Intn(len(cfg.Chars))]
-	}
-	// 分段处理
-	var parts []string
-	for i := 0; i < cfg.Segments; i++ {
-		start := i * (cfg.Length / cfg.Segments)
-		end := start + (cfg.Length / cfg.Segments)
-		parts = append(parts, string(buf[start:end]))
-	}
-	return strings.Join(parts, cfg.Separator)
+// NewCardGenerator 创建卡密生成器
+func NewCardGenerator(logger common.Logger) *CardGenerator {
+    return &CardGenerator{
+        logger: logger,
+    }
 }
 
-func InitDB() error {
-	if err := DB.AutoMigrate(
-		&model.User{},
-		&model.Merchant{},
-		&model.Card{},
-		&model.Order{},
-	); err != nil {
-		return err
-	}
-	return nil
+// GenerateCard 生成单个卡密
+func (cg *CardGenerator) GenerateCard(length int, prefix string) (string, error) {
+    if length <= 0 {
+        return "", errors.New("卡密长度必须大于0")
+    }
+    
+    // 计算随机部分长度
+    randomLength := length - len(prefix)
+    if randomLength <= 0 {
+        return "", errors.New("前缀长度不能大于或等于总长度")
+    }
+    
+    // 生成随机字节
+    bytes := make([]byte, (randomLength+1)/2)
+    _, err := rand.Read(bytes)
+    if err != nil {
+        cg.logger.Error("生成卡密失败: %v", err)
+        return "", err
+    }
+    
+    // 转换为十六进制字符串
+    randomPart := hex.EncodeToString(bytes)[:randomLength]
+    
+    // 添加分隔符
+    formattedCard := addSeparators(prefix + randomPart)
+    
+    cg.logger.Info("生成新卡密: %s", formattedCard)
+    return formattedCard, nil
 }
 
-// 批量生成卡密
-func BatchGenerateCards(merchantID uint, productID string, count int, cfg *CardGenConfig) ([]*model.Card, error) {
-	cards := make([]*model.Card, 0, count)
-	for i := 0; i < count; i++ {
-		code := GenerateCardCode(cfg)
-		card := &model.Card{
-			MerchantID: merchantID,
-			ProductID:  productID,
-			ExpireAt:   time.Now().Add(365 * 24 * time.Hour), // 默认有效期1年
-		}
-		if err := card.EncryptCode(code); err != nil {
-			return nil, err
-		}
-		cards = append(cards, card)
-	}
-	return cards, utils.DB.CreateInBatches(cards, 1000).Error // 批量插入
+// GenerateBatch 批量生成卡密
+func (cg *CardGenerator) GenerateBatch(count int, length int, prefix string) ([]string, error) {
+    if count <= 0 {
+        return nil, errors.New("生成数量必须大于0")
+    }
+    
+    cards := make([]string, 0, count)
+    for i := 0; i < count; i++ {
+        card, err := cg.GenerateCard(length, prefix)
+        if err != nil {
+            return nil, err
+        }
+        cards = append(cards, card)
+    }
+    
+    return cards, nil
 }
+
+// addSeparators 添加分隔符，提高可读性
+func addSeparators(card string) string {
+    // 每4个字符添加一个连字符
+    var result strings.Builder
+    for i, r := range card {
+        if i > 0 && i%4 == 0 {
+            result.WriteRune('-')
+        }
+        result.WriteRune(r)
+    }
+    return result.String()
+}
+
+// ValidateCard 验证卡密格式
+func (cg *CardGenerator) ValidateCard(card string) bool {
+    // 移除分隔符
+    cleanCard := strings.ReplaceAll(card, "-", "")
+    
+    // 检查长度和字符
+    if len(cleanCard) < 8 || len(cleanCard) > 32 {
+        return false
+    }
+    
+    // 检查是否为十六进制字符
+    for _, r := range cleanCard {
+        if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+            return false
+        }
+    }
+    
+    return true
+}
+
+// GenerateExpiryDate 生成卡密过期日期
+func (cg *CardGenerator) GenerateExpiryDate(days int) time.Time {
+    return time.Now().AddDate(0, 0, days)
+}    

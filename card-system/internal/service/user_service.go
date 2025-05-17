@@ -1,31 +1,20 @@
-// internal/service/user_service.go
 package service
 
 import (
 	"card-system/internal/model"
 	"card-system/internal/repository"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
-	userRepo repository.UserRepository
-}
+func UserRegister(user *model.User) error {
+	// 密码加密（原 utils 逻辑移至此）
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hash)
 
-func NewUserService(userRepo repository.UserRepository) *UserService {
-	return &UserService{userRepo: userRepo}
-}
-
-func (s *UserService) GetUserByID(id uint) (*model.User, error) {
-	return s.userRepo.FindByID(id)
-}
-
-func (s *UserService) GetUserByEmail(email string) (*model.User, error) {
-	return s.userRepo.FindByEmail(email)
-}
-
-func (s *UserService) CreateUser(user *model.User) error {
-	return s.userRepo.Create(user)
-}
-
-func (s *UserService) UpdateUser(user *model.User) error {
-	return s.userRepo.Update(user)
+	// 调用数据访问层
+	return repository.CreateUser(user)
 }
