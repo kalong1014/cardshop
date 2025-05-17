@@ -31,13 +31,13 @@ const (
 
 type Card struct {
 	gorm.Model
-	MerchantID uint       `gorm:"not null" json:"merchant_id"`
-	ProductID  uint       `json:"product_id"`
-	CardCode   string     `gorm:"not null" json:"card_code"`
-	Status     string     `gorm:"default:'unused'" json:"status"`
-	ExpireAt   *time.Time `json:"expire_at"`
-	UsedAt     *time.Time `json:"used_at"`
-	Merchant   Merchant   `gorm:"foreignKey:MerchantID" json:"merchant"`
+	CardNumber  string `gorm:"uniqueIndex"` // 添加字段
+	CVV         string
+	ExpiryDate  time.Time
+	CardType    string // 类型（如虚拟卡、实体卡）
+	Status      string // 状态（有效/已使用/过期）
+	MerchantID  uint   // 所属商户
+	UserID      uint   // 购买用户
 }
 
 // GenerateCardCode 生成卡密

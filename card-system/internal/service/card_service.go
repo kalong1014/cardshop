@@ -12,24 +12,16 @@ import (
 )
 
 type CardService struct {
-	cardRepo   repository.CardRepository
-	userRepo   repository.UserRepository
-	cardGen    *card.CardGenerator
-	certMgr    *cert.CertManager
-	cardLocker sync.Mutex
+	repo     repository.CardRepository
+	redis    *redis.Client
+	logger   *common.DefaultLogger // 确保使用 common 日志
 }
 
-func NewCardService(
-	cardRepo repository.CardRepository,
-	userRepo repository.UserRepository,
-	cardGen *card.CardGenerator,
-	certMgr *cert.CertManager,
-) *CardService {
+func NewCardService(repo repository.CardRepository, redis *redis.Client, logger *common.DefaultLogger) *CardService {
 	return &CardService{
-		cardRepo: cardRepo,
-		userRepo: userRepo,
-		cardGen:  cardGen,
-		certMgr:  certMgr,
+		repo:     repo,
+		redis:    redis,
+		logger:   logger,
 	}
 }
 

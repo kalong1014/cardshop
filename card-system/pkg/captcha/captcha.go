@@ -1,34 +1,23 @@
-// 安全加固（验证码与防刷）登录验证码
 package captcha
 
 import (
-	"image/color"
-	"math/rand"
-	"time"
+	"image/png"
+	"io"
 
 	"github.com/dchest/captcha"
-	"github.com/golang/freetype/truetype"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-	captcha.New(6, captcha.NumDigits) // 6位数字验证码
+func GenerateCaptcha() (string, io.Reader, error) {
+	id := captcha.New() // 无需参数
+	solution := captcha.RandomDigits(6) // 生成6位数字
+	captcha.Set(id, solution, time.Minute)
+
+	img := captcha.NewImage(id, 200, 80) // 参数正确顺序：id, width, height
+	buf := new(bytes.Buffer)
+	png.Encode(buf, img)
+	return id, buf, nil
 }
 
-// 获取验证码图片
-func GenerateCaptcha() (string, []byte) {
-	id := captcha.NewID()
-	return id, captcha.NewImage(id, 200, 80, &captcha.Options{
-		Digits: 6,
-		Colors: &captcha.ColorOptions{
-			BgColor: color.White,
-			FgColor: color.Black,
-			Font:    truetype.NewFace(nil, &truetype.Options{}),
-		},
-	})
-}
-
-// 验证验证码
 func VerifyCaptcha(id, solution string) bool {
-	return captcha.Verify(id, solution)
+	return captcha.Verify(id, solution) // 直接对比字符串
 }

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"card-system/internal/common"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -21,11 +20,10 @@ func AuthMiddleware() gin.HandlerFunc {
 			return []byte("your-secret-key"), nil
 		})
 		if err != nil || !token.Valid {
-			common.Error(c, 401, "无效的认证令牌")
+			common.Error(c, 401, "无效令牌")
 			c.Abort()
 			return
 		}
-
 		c.Next()
 	}
 }
