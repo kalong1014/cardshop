@@ -22,6 +22,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// 自动迁移模型
+db.AutoMigrate(
+    &model.User{},
+    &model.Merchant{},
+    &model.Page{},
+    &model.Card{},
+)
+
 func main() {
 	// 加载配置
 	cfg := config.LoadConfig()
