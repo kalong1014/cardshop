@@ -1,74 +1,80 @@
 package controller
 
 import (
-	"card-system/internal/model"
-	"card-system/internal/utils" // 添加此行
-	"card-system/pkg/storage"
-	"context"
-	"fmt"
 	"net/http"
+	"strconv"
+
+	"card-system/internal/middleware"
+	"card-system/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
-// controller/file_controller.go
-func UploadLogo(c *gin.Context) {
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "文件上传失败"})
-		return
-	}
-
-	merchantID := getCurrentMerchantID(c)
-	filename := fmt.Sprintf("merchant_%d_logo_%s", merchantID, uuid.New().String())
-	dst := fmt.Sprintf("static/logos/%s.jpg", filename)
-	if err := c.SaveUploadedFile(file, dst); err != nil {
-		handleError(c, err)
-		return
-	}
-
-	// 更新商户LOGO路径
-	if err := utils.DB.Model(&model.Merchant{}).Where("id = ?", merchantID).Update("logo", dst).Error; err != nil {
-		handleError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"url": "/static/logos/" + filename + ".jpg"})
+type FileController struct {
+	fileService service.FileService
 }
 
-// 控制器集成（支持多存储切换）
-func UploadLogo(c *gin.Context) {
+func NewFileController(fileService service.FileService) *FileController {
+	return &FileController{fileService: fileService}
+}
+
+func (fc *FileController) SetupRoutes(router *gin.RouterGroup) {
+	fileGroup := router.Group("/files")
+	{
+		fileGroup.GET("/:id", fc.GetFile)
+		fileGroup.POST("/upload", middleware.RateLimit(), fc.UploadFile)
+		fileGroup.DELETE("/:id", fc.DeleteFile)
+	}
+}
+
+func (fc *FileController) GetFile(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文件ID"})
+		return
+	}
+
+	file, err := fc.fileService.GetFileByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文件不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, file)
+}
+
+func (fc *FileController) UploadFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "文件读取失败"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "缺少文件上传"})
 		return
 	}
 
-	// 动态获取存储驱动（从系统配置）
-	driver, _ := service.Config.Get("storage.driver")
-	var storage storage.Storage
-	switch driver {
-	case "local":
-		storage = &storage.LocalStorage{BasePath: "static/logos/"}
-	case "minio":
-		storage = &storage.MinIOStorage{
-			Client: minioClient, // 初始化MinIO客户端
-			Bucket: "merchant-logos",
-		}
-	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "不支持的存储驱动"})
+	userID := c.GetInt("user_id")
+	newFile, err := fc.fileService.SaveFile(file, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "文件保存失败"})
 		return
 	}
 
-	filename := fmt.Sprintf("merchant_%d_logo_%s.jpg", getCurrentMerchantID(c), uuid.New().String())
-	if err := storage.Upload(context.Background(), filename, file.Open()); err != nil {
-		return handleError(c, err)
+	c.JSON(http.StatusCreated, newFile)
+}
+
+func (fc *FileController) DeleteFile(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文件ID"})
+		return
 	}
 
-	// 保存文件路径到数据库
-	if err := utils.DB.Model(&model.Merchant{}).Where("id = ?", getCurrentMerchantID(c)).Update("logo", filename).Error; err != nil {
-		return handleError(c, err)
+	userID := c.GetInt("user_id")
+	err = fc.fileService.DeleteFile(id, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权限删除文件"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"url": storage.GetURL(context.Background(), filename)})
+	c.JSON(http.StatusOK, gin.H{"message": "文件删除成功"})
 }

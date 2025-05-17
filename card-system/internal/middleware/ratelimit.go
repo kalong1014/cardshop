@@ -1,32 +1,23 @@
-// 控制器集成（防刷中间件）
 package middleware
 
 import (
 	"net/http"
 	"time"
 
-	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )
 
+// 全局令牌桶
+var limiter = rate.NewLimiter(rate.Every(time.Second), 10)
+
 func RateLimit() gin.HandlerFunc {
-	limiter := rate.NewLimiter(rate.Every(time.Minute), 5) // 每分钟5次
 	return func(c *gin.Context) {
 		if !limiter.Allow() {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "请求频率过高"})
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "请求过于频繁，请稍后再试"})
+			c.Abort()
 			return
 		}
 		c.Next()
 	}
-}
-
-// 在登录接口应用
-func Login(c *gin.Context) {
-	// 验证验证码
-	if !captcha.Verify(c.Query("captcha_id"), c.Query("captcha")) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "验证码错误"})
-		return
-	}
-	// 原有登录逻辑...
 }
